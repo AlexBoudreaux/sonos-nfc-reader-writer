@@ -40,6 +40,7 @@ def fetch_next_unmapped_media():
         finally:
             return None
 
+# hello catherine
 def read_nfc_tag():
     try:
         id = reader.read()[0]
