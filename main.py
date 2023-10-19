@@ -29,7 +29,7 @@ def fetch_next_unmapped_media():
     tables = ['artists', 'albums', 'playlists']
 
     for table in tables:
-        result = supabase.table(table).select('id').eq('nfc_id', None).limit(1).execute()
+        result = supabase.table(table).select('nfc_id').eq('nfc_id', str(nfc_id)).execute()
         if result and result[0]:
             return {"name": result[0].get('name'), "table": table}
 
@@ -43,7 +43,7 @@ def read_nfc_tag():
         GPIO.cleanup()
 
 def save_nfc_id_to_media(nfc_id, media):
-    media['nfc_id'] = nfc_id
+    media['nfc_id'] = str(nfc_id)
     # media['updated_at'] = datetime.now().isoformat()
     supabase.table(media['table']).update(media, ['id']).execute()
 
