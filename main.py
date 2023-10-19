@@ -31,11 +31,14 @@ def fetch_next_unmapped_media():
     tables = ['artists', 'albums', 'playlists']
 
     for table in tables:
-        result = supabase.table(table).select('id').eq('nfc_id', None).limit(1).execute()
-        if result and result[0]:
-            return {"name": result[0].get('name'), "table": table}
+        # fetch next media item without an NFC ID
+        result = supabase.table(table).select('*').is_('nfc_id', None).execute()
+        try:
+            if result and result[0]:
+                return result[0]
 
-    return None
+        finally:
+            return None
 
 def read_nfc_tag():
     try:
