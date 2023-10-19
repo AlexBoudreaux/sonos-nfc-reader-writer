@@ -4,6 +4,9 @@ from supabase_py import create_client
 import os
 import RPi.GPIO as GPIO
 from mfrc522 import SimpleMFRC522
+from dotenv import load_dotenv
+
+load_dotenv()
 
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
@@ -23,12 +26,12 @@ def fetch_spotify_id(nfc_id):
     return None
 
 def fetch_next_unmapped_media():
-    tables = ['Artists', 'Albums', 'Playlists']
+    tables = ['artists', 'albums', 'playlists']
 
     for table in tables:
         result = supabase.table(table).select('id').eq('nfc_id', None).limit(1).execute()
         if result and result[0]:
-            return {"media_id": result[0].get('id'), "table": table}
+            return {"name": result[0].get('name'), "table": table}
 
     return None
 
@@ -41,7 +44,7 @@ def read_nfc_tag():
 
 def save_nfc_id_to_media(nfc_id, media):
     media['nfc_id'] = nfc_id
-    media['updated_at'] = datetime.now().isoformat()
+    # media['updated_at'] = datetime.now().isoformat()
     supabase.table(media['table']).update(media, ['id']).execute()
 
 def main():
@@ -63,7 +66,7 @@ def main():
 
         # Save the NFC ID to the media object in the DB
         save_nfc_id_to_media(nfc_id, media)
-        print(f"Mapped NFC ID {nfc_id} to {media['table']} with ID {media['media_id']}")
+        print(f"Mapped NFC ID {nfc_id} to {media['name']} in {media['table']} table ")
 
         time.sleep(1)  # Wait for a short duration before the next read to avoid rapid continuous reads
 
