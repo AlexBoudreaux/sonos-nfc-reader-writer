@@ -1,19 +1,17 @@
 import time
 from datetime import datetime
-from supabase_py import create_client, Client
-from dotenv import load_dotenv
+from supabase_py import create_client
 import os
-import nfc
-
-# Assuming you've set up the NFC reader library and have a function like this:
-# from your_nfc_library import read_nfc_tag  # You'll need to replace this with your actual import
+import RPi.GPIO as GPIO
+from mfrc522 import SimpleMFRC522
 
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
 supabase = create_client(supabase_url, supabase_key)
 
+reader = SimpleMFRC522()
+
 def fetch_spotify_id(nfc_id):
-    # db = init_supabase()
     tables = ['Artists', 'Albums', 'Playlists']
     media_types = ['artist', 'album', 'playlist']
 
@@ -25,11 +23,6 @@ def fetch_spotify_id(nfc_id):
     return None
 
 def fetch_next_unmapped_media():
-    """
-    Fetches the next media item (album, artist, or playlist) from the DB 
-    that doesn't have an NFC ID mapped to it.
-    """
-    # db = init_supabase()
     tables = ['Artists', 'Albums', 'Playlists']
 
     for table in tables:
@@ -40,15 +33,13 @@ def fetch_next_unmapped_media():
     return None
 
 def read_nfc_tag():
-    clf = nfc.ContactlessFrontend('usb')
-    tag = clf.connect(rdwr={'on-connect': lambda tag: False})
-    clf.close()
-    return tag
+    try:
+        id = reader.read()[0]
+        return id
+    finally:
+        GPIO.cleanup()
 
 def save_nfc_id_to_media(nfc_id, media):
-    """
-    Maps the NFC ID to the media object in the DB.
-    """
     media['nfc_id'] = nfc_id
     media['updated_at'] = datetime.now().isoformat()
     supabase.table(media['table']).update(media, ['id']).execute()
