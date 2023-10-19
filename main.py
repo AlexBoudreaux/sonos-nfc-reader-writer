@@ -20,10 +20,12 @@ def fetch_spotify_id(nfc_id):
 
     for table, media_type in zip(tables, media_types):
         result = supabase.table(table).select('nfc_id').eq('nfc_id', str(nfc_id)).execute()
-        if result and result[0]:
-            return {"nfc_id": result[0].get('nfc_id'), "media_type": media_type}
+        try:
+            if result and result[0]:
+                return {"nfc_id": result[0].get('nfc_id'), "media_type": media_type}
 
-    return None
+        finally:
+            return None
 
 def fetch_next_unmapped_media():
     tables = ['artists', 'albums', 'playlists']
