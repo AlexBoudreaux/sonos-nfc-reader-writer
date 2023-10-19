@@ -15,13 +15,13 @@ supabase = create_client(supabase_url, supabase_key)
 reader = SimpleMFRC522()
 
 def fetch_spotify_id(nfc_id):
-    tables = ['Artists', 'Albums', 'Playlists']
+    tables = ['artists', 'albums', 'playlists']
     media_types = ['artist', 'album', 'playlist']
 
     for table, media_type in zip(tables, media_types):
-        result = supabase.table(table).select('spotify_id').eq('nfc_id', nfc_id).execute()
+        result = supabase.table(table).select('nfc_id').eq('nfc_id', nfc_id).execute()
         if result and result[0]:
-            return {"spotify_id": result[0].get('spotify_id'), "media_type": media_type}
+            return {"nfc_id": result[0].get('nfc_id'), "media_type": media_type}
 
     return None
 
@@ -55,7 +55,7 @@ def main():
         # Check if the NFC ID is already in the DB
         existing_media = fetch_spotify_id(nfc_id)
         if existing_media:
-            print(f"Warning: NFC ID {nfc_id} is already mapped to {existing_media['media_type']} with Spotify ID {existing_media['spotify_id']}")
+            print(f"Warning: NFC ID {nfc_id} is already mapped to {existing_media['media_type']} with Spotify ID {existing_media['nfc_id']}")
             continue
 
         # Get the next media item without an NFC ID
