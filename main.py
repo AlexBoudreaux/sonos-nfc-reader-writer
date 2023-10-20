@@ -16,7 +16,7 @@ def fetch_row_by_nfc_id(nfc_id):
     media_types = ['artist', 'album', 'playlist']
 
     for table, media_type in zip(tables, media_types):
-        result = db.table(table).select('id').eq('nfc_id', nfc_id).execute()
+        result = db.table(table).select('id').eq('nfc_id', str(nfc_id)).execute()
         if result and len(result['data']) > 0:
             return {"id": result['data'][0].get('id'), "media_type": media_type}
     return None
