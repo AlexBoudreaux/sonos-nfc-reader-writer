@@ -65,6 +65,7 @@ def main():
 
         assign_nfc_id_to_row(row_to_map["table"], row_to_map["id"], nfc_id)
         print(f"NFC ID {nfc_id} has been mapped to {row_to_map['table']} with name: {row_to_map['name']}")
+        return
 
 if __name__ == "__main__":
     main()
