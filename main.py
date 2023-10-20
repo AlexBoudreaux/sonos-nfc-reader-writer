@@ -52,7 +52,7 @@ def main():
     while True:
         
         print("Ready to scan NFC tag...")
-        nfc_id = id = reader.read()[0]
+        nfc_id = reader.read()[0]
 
         if fetch_row_by_nfc_id(nfc_id):
             print(f"Warning: NFC ID {nfc_id} is already mapped!")
