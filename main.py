@@ -1,80 +1,70 @@
-import time
-from datetime import datetime
-from supabase_py import create_client
-import os
 import RPi.GPIO as GPIO
 from mfrc522 import SimpleMFRC522
-from dotenv import load_dotenv
+from supabase_py import create_client
 
-load_dotenv()
+# SupaBase initialization
+supabase_url = "https://kawbaltqnmyidugkecqc.supabase.co"  # replace with your URL
+supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imthd2JhbHRxbm15aWR1Z2tlY3FjIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTU0MzcyOTUsImV4cCI6MjAxMTAxMzI5NX0.F2AN32QxlNf93MqD3UNTLP0wws52vQON0FTz0S2t40c"
 
-supabase_url = os.getenv("SUPABASE_URL")
-supabase_key = os.getenv("SUPABASE_KEY")
-supabase = create_client(supabase_url, supabase_key)
+def init_supabase():
+    supabase = create_client(supabase_url, supabase_key)
+    return supabase
 
-reader = SimpleMFRC522()
-
-def fetch_spotify_id(nfc_id):
+def fetch_row_by_nfc_id(nfc_id):
+    db = init_supabase()
     tables = ['artists', 'albums', 'playlists']
     media_types = ['artist', 'album', 'playlist']
 
     for table, media_type in zip(tables, media_types):
-        result = supabase.table(table).select('nfc_id').eq('nfc_id', str(nfc_id)).execute()
-        try:
-            if result and result[0]:
-                return {"nfc_id": result[0].get('nfc_id'), "media_type": media_type}
+        result = db.table(table).select('id').eq('nfc_id', nfc_id).execute()
+        if result and len(result['data']) > 0:
+            return {"id": result['data'][0].get('id'), "media_type": media_type}
+    return None
 
-        finally:
-            return None
-
-def fetch_next_unmapped_media():
+def find_unmapped_row():
+    db = init_supabase()
     tables = ['artists', 'albums', 'playlists']
 
     for table in tables:
-        # fetch next media item without an NFC ID
-        result = supabase.table(table).select('*').is_('nfc_id', None).execute()
-        try:
-            if result and result[0]:
-                return result[0]
+        result = db.table(table).select('*').execute()
+        rows = result.get('data', [])
+        
+        unmapped_rows = [row for row in rows if row.get('nfc_id') is None]
+        if unmapped_rows:
+            return {"table": table, "id": unmapped_rows[0].get('id'), "name": unmapped_rows[0].get('name')}
+    return None
 
-        finally:
-            return None
+def assign_nfc_id_to_row(table, id, nfc_id):
+    db = init_supabase()
 
-# hello catherine
-def read_nfc_tag():
-    try:
-        id = reader.read()[0]
-        return id
-    finally:
-        GPIO.cleanup()
+    result = db.table(table).select('*').eq('id', str(id)).execute()
+    row = result.get('data', [])[0]
 
-def save_nfc_id_to_media(nfc_id, media):
-    media['nfc_id'] = str(nfc_id)
-    # media['updated_at'] = datetime.now().isoformat()
-    supabase.table(media['table']).update(media, ['id']).execute()
+    row['nfc_id'] = nfc_id
+
+    response = db.table(table).insert(row, upsert=True).execute()
+
+    return response
 
 def main():
+    reader = SimpleMFRC522()
+
     while True:
+        
         print("Ready to scan NFC tag...")
-        nfc_id = read_nfc_tag()
+        nfc_id = id = reader.read()[0]
 
-        # Check if the NFC ID is already in the DB
-        existing_media = fetch_spotify_id(nfc_id)
-        if existing_media:
-            print(f"Warning: NFC ID {nfc_id} is already mapped to {existing_media['media_type']} with Spotify ID {existing_media['nfc_id']}")
-            continue
+        if fetch_row_by_nfc_id(nfc_id):
+            print(f"Warning: NFC ID {nfc_id} is already mapped!")
+            return
 
-        # Get the next media item without an NFC ID
-        media = fetch_next_unmapped_media()
-        if not media:
-            print("No more media items left to map.")
-            break
+        row_to_map = find_unmapped_row()
+        if not row_to_map:
+            print("All rows have been mapped!")
+            return
 
-        # Save the NFC ID to the media object in the DB
-        save_nfc_id_to_media(nfc_id, media)
-        print(f"Mapped NFC ID {nfc_id} to {media['name']} in {media['table']} table ")
-
-        time.sleep(1)  # Wait for a short duration before the next read to avoid rapid continuous reads
+        assign_nfc_id_to_row(row_to_map["table"], row_to_map["id"], nfc_id)
+        print(f"NFC ID {nfc_id} has been mapped to {row_to_map['table']} with name: {row_to_map['name']}")
 
 if __name__ == "__main__":
     main()
