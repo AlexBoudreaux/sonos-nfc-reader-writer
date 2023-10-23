@@ -1,6 +1,8 @@
 import RPi.GPIO as GPIO
 from mfrc522 import SimpleMFRC522
 from supabase_py import create_client
+import threading
+import queue
 
 # SupaBase initialization
 supabase_url = "https://kawbaltqnmyidugkecqc.supabase.co"  # replace with your URL
@@ -46,13 +48,11 @@ def assign_nfc_id_to_row(table, id, nfc_id):
 
     return response
 
-def main():
-    reader = SimpleMFRC522()
-
+def worker(nfc_queue):
     while True:
-        
-        print("Ready to scan NFC tag...")
-        nfc_id = reader.read()[0]
+        nfc_id = nfc_queue.get()
+        if nfc_id is None:  # Sentinel value to end the worker thread
+            break
 
         if fetch_row_by_nfc_id(nfc_id):
             print(f"Warning: NFC ID {nfc_id} is already mapped!")
@@ -65,6 +65,23 @@ def main():
 
         assign_nfc_id_to_row(row_to_map["table"], row_to_map["id"], nfc_id)
         print(f"NFC ID {nfc_id} has been mapped to {row_to_map['table']} with name: {row_to_map['name']}")
+        nfc_queue.task_done()
+
+def main():
+    reader = SimpleMFRC522()
+    nfc_queue = queue.Queue()
+    
+    worker_thread = threading.Thread(target=worker, args=(nfc_queue,))
+    worker_thread.start()
+
+    try:
+        while True:
+            print("Ready to scan NFC tag...")
+            nfc_id = reader.read()[0]
+            nfc_queue.put(nfc_id)
+    except KeyboardInterrupt:
+        nfc_queue.put(None)  # Add a sentinel value to signal the worker to exit
+        worker_thread.join()
 
 if __name__ == "__main__":
     main()
