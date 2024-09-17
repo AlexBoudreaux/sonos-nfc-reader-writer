@@ -18,12 +18,36 @@ This project allows you to map NFC tags to Spotify artists, albums, or playlists
    cd sonos-nfc-reader-writer
    ```
 
-2. Install required packages:
+2. Set up the MFRC522 NFC module:
+   Connect the MFRC522 module to the Raspberry Pi as follows:
+   - SDA  -> Pin 24 (GPIO 8)
+   - SCK  -> Pin 23 (GPIO 11)
+   - MOSI -> Pin 19 (GPIO 10)
+   - MISO -> Pin 21 (GPIO 9)
+   - IRQ  -> Not connected
+   - GND  -> Pin 6 (GND)
+   - RST  -> Pin 22 (GPIO 25)
+   - 3.3V -> Pin 1 (3.3V)
+
+3. Enable SPI on the Raspberry Pi:
+   - Run `sudo raspi-config`
+   - Navigate to "Interface Options"
+   - Select "SPI"
+   - Choose "Yes" to enable SPI
+   - Select "Finish" and reboot your Raspberry Pi
+
+4. Create and activate a virtual environment:
+   ```
+   python -m venv venv
+   source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+   ```
+
+5. Install required packages:
    ```
    pip install -r requirements.txt
    ```
 
-3. Set up Firebase:
+6. Set up Firebase:
    - Create a Firebase project at https://console.firebase.google.com/
    - Generate a new private key for your service account:
      - Go to Project settings > Service Accounts
@@ -31,7 +55,7 @@ This project allows you to map NFC tags to Spotify artists, albums, or playlists
      - Save the JSON file securely
    - Rename the JSON file to `spotify-db-firebase-admin-creds.json` and place it in the project root
 
-4. Configure environment variables:
+7. Configure environment variables:
    - Copy `.env.sample` to `.env`
    - Update the `FIREBASE_CREDENTIALS` path in `.env` to point to your Firebase credentials JSON file
    - Set the `SONOS_SPEAKER_NAME` to your Sonos speaker name (for future use)
