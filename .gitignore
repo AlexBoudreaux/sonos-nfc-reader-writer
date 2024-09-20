@@ -130,6 +130,8 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
+
+
 # mkdocs documentation
 /site
 
@@ -156,7 +158,6 @@ cython_debug/
 
 # Environment variables
 .env
-.envsample
 
 
 
